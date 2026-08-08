@@ -25,6 +25,9 @@
     "check": "npm run typecheck && npm test && npm run test:package"
   },
   "dependencies": {},
+  "overrides": {
+    "vite": "6.2.7"
+  },
   "devDependencies": {
     "@types/node": "^18.0.0",
     "tsup": "^8.0.0",
