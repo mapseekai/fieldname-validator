@@ -1,11 +1,12 @@
-import { isPostgresql18ReservedKeyword } from "../keywords/postgresql-18.js";
+import { POSTGRESQL_18_RESERVED_KEYWORDS } from "../keywords/postgresql-18.js";
 import {
   initialCharacter,
   maxUtf8Bytes,
   nonEmpty,
+  reservedKeywords,
   subsequentCharacters,
 } from "../rules.js";
-import type { InternalProfile, InternalRule } from "../types.js";
+import type { InternalProfile } from "../types.js";
 
 const POSTGRESQL_LEXICAL_SOURCE = {
   title: "PostgreSQL 18: Lexical Structure",
@@ -33,26 +34,6 @@ function isAllowedSubsequentCharacter(character: string): boolean {
     character === "$"
   );
 }
-
-const reservedKeywordRule: InternalRule = {
-  info: {
-    code: "RESERVED_KEYWORD",
-    description: "Must not be a PostgreSQL 18 reserved key word.",
-    assumptions: [LOWERCASE_FOLDING_ASSUMPTION],
-    sources: [POSTGRESQL_LEXICAL_SOURCE, POSTGRESQL_KEYWORDS_SOURCE],
-  },
-  evaluate(name) {
-    if (name === "" || !isPostgresql18ReservedKeyword(name)) {
-      return undefined;
-    }
-
-    return {
-      code: "RESERVED_KEYWORD",
-      message: "Field name is a reserved keyword.",
-      details: { keyword: name },
-    };
-  },
-};
 
 export const postgresqlProfile: InternalProfile = Object.freeze({
   id: "postgresql",
@@ -82,6 +63,10 @@ export const postgresqlProfile: InternalProfile = Object.freeze({
       assumptions: [LOWERCASE_FOLDING_ASSUMPTION],
       sources: [POSTGRESQL_LEXICAL_SOURCE],
     }),
-    reservedKeywordRule,
+    reservedKeywords(POSTGRESQL_18_RESERVED_KEYWORDS, {
+      description: "Must not be a PostgreSQL 18 reserved key word.",
+      assumptions: [LOWERCASE_FOLDING_ASSUMPTION],
+      sources: [POSTGRESQL_LEXICAL_SOURCE, POSTGRESQL_KEYWORDS_SOURCE],
+    }),
   ]),
 });

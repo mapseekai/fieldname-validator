@@ -1,5 +1,3 @@
-import { asciiLowercase } from "../rules.js";
-
 export const SQLITE_3_53_4_KEYWORDS: ReadonlySet<string> = new Set([
   "ABORT",
   "ACTION",
@@ -149,7 +147,3 @@ export const SQLITE_3_53_4_KEYWORDS: ReadonlySet<string> = new Set([
   "WITH",
   "WITHOUT",
 ]);
-
-export function isSqlite3534Keyword(name: string): boolean {
-  return SQLITE_3_53_4_KEYWORDS.has(asciiLowercase(name).toUpperCase());
-}

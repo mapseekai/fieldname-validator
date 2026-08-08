@@ -1,5 +1,3 @@
-import { asciiLowercase } from "../rules.js";
-
 export const POSTGRESQL_18_RESERVED_KEYWORDS: ReadonlySet<string> = new Set([
   "ALL",
   "ANALYSE",
@@ -103,7 +101,3 @@ export const POSTGRESQL_18_RESERVED_KEYWORDS: ReadonlySet<string> = new Set([
   "WINDOW",
   "WITH",
 ]);
-
-export function isPostgresql18ReservedKeyword(name: string): boolean {
-  return POSTGRESQL_18_RESERVED_KEYWORDS.has(asciiLowercase(name).toUpperCase());
-}

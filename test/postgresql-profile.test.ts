@@ -9,6 +9,7 @@ describe("PostgreSQL 18 bare identifiers", () => {
     ["parcel_id", []],
     ["MixedCase", []],
     ["éclair", []],
+    ["ſelect", []],
     ["parcel$part", []],
     ["", ["EMPTY_NAME"]],
     ["1parcel", ["INVALID_START_CHARACTER"]],
@@ -18,6 +19,15 @@ describe("PostgreSQL 18 bare identifiers", () => {
     ["é".repeat(32), ["MAX_LENGTH_EXCEEDED"]],
   ])("validates %j", (name, expected) => {
     expect(codes(name, "postgresql")).toEqual(expected);
+  });
+
+  it("reports reserved keywords with canonical lowercase details", () => {
+    expect(validateFieldName("SELECT", "postgresql").errors).toContainEqual(
+      expect.objectContaining({
+        code: "RESERVED_KEYWORD",
+        details: { keyword: "select" },
+      }),
+    );
   });
 
   it("uses equivalent rules for postgis while preserving the requested alias", () => {

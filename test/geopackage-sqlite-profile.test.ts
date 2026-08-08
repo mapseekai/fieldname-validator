@@ -5,6 +5,7 @@ describe("SQLite 3.53.4 bare identifiers", () => {
   it.each([
     ["_local", true, []],
     ["école", true, []],
+    ["ſelect", true, []],
     ["dollar$inside", true, []],
     ["a".repeat(256), true, []],
     ["", false, ["EMPTY_NAME"]],
@@ -24,6 +25,15 @@ describe("SQLite 3.53.4 bare identifiers", () => {
     expect(
       validateFieldName(name, "sqlite").errors.map((issue) => issue.code),
     ).toContain(expectedCode);
+  });
+
+  it("reports reserved keywords with canonical lowercase details", () => {
+    expect(validateFieldName("SELECT", "sqlite").errors).toContainEqual(
+      expect.objectContaining({
+        code: "RESERVED_KEYWORD",
+        details: { keyword: "select" },
+      }),
+    );
   });
 
   it("preserves geopackage as the caller alias and does not expose lowercase style as an error", () => {

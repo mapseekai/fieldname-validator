@@ -18,6 +18,12 @@ export function asciiLowercase(value: string): string {
   return value.replace(/[A-Z]/g, (character) => character.toLowerCase());
 }
 
+function asciiUppercase(value: string): string {
+  return value.replace(/[a-z]/g, (character) =>
+    String.fromCharCode(character.charCodeAt(0) - 32),
+  );
+}
+
 function ruleInfo(code: FieldNameIssueCode, metadata: RuleMetadata): FieldNameRuleInfo {
   return { code, ...metadata };
 }
@@ -131,7 +137,7 @@ export function reservedKeywords(
   keywords: ReadonlySet<string>,
   metadata: RuleMetadata,
 ): InternalRule {
-  const canonicalKeywords = new Set(Array.from(keywords, asciiLowercase));
+  const canonicalKeywords = new Set(Array.from(keywords, asciiUppercase));
 
   return {
     info: ruleInfo("RESERVED_KEYWORD", metadata),
@@ -140,15 +146,14 @@ export function reservedKeywords(
         return undefined;
       }
 
-      const keyword = asciiLowercase(name);
-      if (!canonicalKeywords.has(keyword)) {
+      if (!canonicalKeywords.has(asciiUppercase(name))) {
         return undefined;
       }
 
       return {
         code: "RESERVED_KEYWORD",
         message: "Field name is a reserved keyword.",
-        details: { keyword },
+        details: { keyword: asciiLowercase(name) },
       };
     },
   };

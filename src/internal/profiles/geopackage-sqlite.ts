@@ -1,10 +1,11 @@
-import { isSqlite3534Keyword } from "../keywords/sqlite-3.53.4.js";
+import { SQLITE_3_53_4_KEYWORDS } from "../keywords/sqlite-3.53.4.js";
 import {
   initialCharacter,
   nonEmpty,
+  reservedKeywords,
   subsequentCharacters,
 } from "../rules.js";
-import type { InternalProfile, InternalRule } from "../types.js";
+import type { InternalProfile } from "../types.js";
 
 const SQLITE_TOKENIZER_SOURCE = {
   title: "SQLite Tokenizer Requirements",
@@ -65,26 +66,6 @@ function isAllowedSubsequentCharacter(character: string): boolean {
   );
 }
 
-const reservedKeywordRule: InternalRule = {
-  info: {
-    code: "RESERVED_KEYWORD",
-    description: "Must not be a SQLite 3.53.4 keyword.",
-    assumptions: [GEOPACKAGE_STYLE_ASSUMPTION],
-    sources: [SQLITE_KEYWORDS_SOURCE, GEOPACKAGE_SOURCE],
-  },
-  evaluate(name) {
-    if (name === "" || !isSqlite3534Keyword(name)) {
-      return undefined;
-    }
-
-    return {
-      code: "RESERVED_KEYWORD",
-      message: "Field name is a reserved keyword.",
-      details: { keyword: name },
-    };
-  },
-};
-
 export const geopackageSqliteProfile: InternalProfile = Object.freeze({
   id: "geopackage-sqlite",
   aliases: Object.freeze(["geopackage", "sqlite"] as const),
@@ -106,6 +87,10 @@ export const geopackageSqliteProfile: InternalProfile = Object.freeze({
       assumptions: [GEOPACKAGE_STYLE_ASSUMPTION],
       sources: [SQLITE_TOKENIZER_SOURCE, GEOPACKAGE_SOURCE],
     }),
-    reservedKeywordRule,
+    reservedKeywords(SQLITE_3_53_4_KEYWORDS, {
+      description: "Must not be a SQLite 3.53.4 keyword.",
+      assumptions: [GEOPACKAGE_STYLE_ASSUMPTION],
+      sources: [SQLITE_KEYWORDS_SOURCE, GEOPACKAGE_SOURCE],
+    }),
   ]),
 });
