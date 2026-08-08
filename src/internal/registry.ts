@@ -1,7 +1,11 @@
 import type { InternalProfile } from "./types.js";
 import { postgresqlProfile } from "./profiles/postgresql.js";
+import { shapefileDbfProfile } from "./profiles/shapefile-dbf.js";
 
-const profiles: readonly InternalProfile[] = Object.freeze([postgresqlProfile]);
+const profiles: readonly InternalProfile[] = Object.freeze([
+  postgresqlProfile,
+  shapefileDbfProfile,
+]);
 
 export function resolveProfile(format: unknown): InternalProfile {
   if (typeof format !== "string") {
