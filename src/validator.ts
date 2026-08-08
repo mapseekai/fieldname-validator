@@ -35,6 +35,10 @@ export function getFieldNameRules(format: FieldNameFormat): FieldNameRules {
 
   return {
     format,
-    rules: profile.rules.map((rule) => rule.info),
+    rules: profile.rules.map((rule) => ({
+      ...rule.info,
+      assumptions: [...rule.info.assumptions],
+      sources: rule.info.sources.map((source) => ({ ...source })),
+    })),
   };
 }
