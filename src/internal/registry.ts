@@ -1,6 +1,7 @@
 import type { InternalProfile } from "./types.js";
+import { postgresqlProfile } from "./profiles/postgresql.js";
 
-const profiles: readonly InternalProfile[] = Object.freeze([]);
+const profiles: readonly InternalProfile[] = Object.freeze([postgresqlProfile]);
 
 export function resolveProfile(format: unknown): InternalProfile {
   if (typeof format !== "string") {
