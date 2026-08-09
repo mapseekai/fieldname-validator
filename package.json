@@ -1,6 +1,6 @@
 {
   "name": "fieldname-validator",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Validate one field name against selected database and geospatial format rules.",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -18,9 +18,16 @@
       }
     }
   },
-  "files": ["dist", "README.md", "README.zh-CN.md", "CHANGELOG.md"],
+  "files": [
+    "dist",
+    "README.md",
+    "README.zh-CN.md",
+    "CHANGELOG.md"
+  ],
   "sideEffects": false,
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts --clean",
     "test": "vitest run",
