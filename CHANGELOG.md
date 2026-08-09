@@ -1,25 +1,25 @@
-# 更新日志 / Changelog
+# Changelog
 
-本项目的重要变更记录在此文件中。
+All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
 ## [0.2.0] - 2026-08-09
 
-### 新增
+### Added
 
-- 添加简体中文 README，说明作用范围、API、错误代码、支持的 Profile 与权威规则来源。
-- 将简体中文 README 与本更新日志纳入 npm 发布文件。
-- 为外部 ESM 和 CommonJS TypeScript 消费者添加包类型解析验证。
+- Add Simplified Chinese README covering scope, API, error codes, supported profiles, and authoritative rule sources.
+- Include the Simplified Chinese README and this changelog in the npm package files.
+- Add package type-resolution verification for external ESM and CommonJS TypeScript consumers.
 
-### 修复
+### Fixed
 
-- 为条件导出分别指定 ESM 的 `.d.ts` 与 CommonJS 的 `.d.cts` 声明文件，避免 Node16 模块解析下 CommonJS TypeScript 消费者出现 TS1479。
+- Specify separate `.d.ts` (ESM) and `.d.cts` (CommonJS) declaration files for conditional exports, avoiding TS1479 for CommonJS TypeScript consumers under Node16 module resolution.
 
 ## [0.1.0]
 
-### 新增
+### Added
 
-- 提供 `validateFieldName`、`isValidFieldName` 和 `getFieldNameRules` API。
-- 支持 PostgreSQL/PostGIS、Shapefile/DBF 和 GeoPackage/SQLite 的单字段名称校验。
-- 提供可扩展的 Profile + Rule 结构与零运行时依赖的 ESM/CommonJS 构建产物。
+- Provide the `validateFieldName`, `isValidFieldName`, and `getFieldNameRules` APIs.
+- Support single-field-name validation for PostgreSQL/PostGIS, Shapefile/DBF, and GeoPackage/SQLite.
+- Provide an extensible Profile + Rule structure with zero-runtime-dependency ESM/CommonJS builds.
