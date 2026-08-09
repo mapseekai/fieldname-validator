@@ -1,5 +1,7 @@
 # fieldname-validator
 
+[English](README.md) | [简体中文](README.zh-CN.md) | [Changelog](CHANGELOG.md)
+
 Validate one logical field name at a time against a supported database or geospatial interchange profile. Schema-wide, multi-field, type, value, duplicate-name, normalization, and quoting validation are outside this package's scope.
 
 ## Installation
