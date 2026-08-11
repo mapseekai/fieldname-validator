@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { readFileSync, rmSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 describe("package contract", () => {
@@ -59,6 +60,27 @@ describe("package contract", () => {
 
     expect(packageJson.license).toBe("UNLICENSED");
   });
+
+  it("rebuilds a missing dist through the npm pack prepack lifecycle", () => {
+    rmSync("dist", { recursive: true, force: true });
+
+    try {
+      const result = spawnSync(
+        process.execPath,
+        ["scripts/verify-package.mjs"],
+        { encoding: "utf8" },
+      );
+      const output = [result.stdout, result.stderr].filter(Boolean).join("\n");
+
+      if (result.error) throw result.error;
+      expect(result.status, output).toBe(0);
+      expect(result.stdout).toContain(
+        "4 entry artifacts, exact ESM/CJS exports, zero dependency channels, and strict MTS/CTS consumers",
+      );
+    } finally {
+      rmSync("dist", { recursive: true, force: true });
+    }
+  });
 });
 
 describe("TypeScript compiler contract", () => {
@@ -69,5 +91,10 @@ describe("TypeScript compiler contract", () => {
 
     expect(tsconfig.compilerOptions?.strict).toBe(true);
     expect(tsconfig.compilerOptions?.noEmit).toBe(true);
+    expect(tsconfig.compilerOptions?.isolatedModules).toBe(true);
+    expect(tsconfig.compilerOptions?.moduleDetection).toBe("force");
+    expect(tsconfig.compilerOptions?.noUncheckedIndexedAccess).toBe(true);
+    expect(tsconfig.compilerOptions?.exactOptionalPropertyTypes).toBe(true);
+    expect(tsconfig.compilerOptions?.noUncheckedSideEffectImports).toBe(true);
   });
 });
