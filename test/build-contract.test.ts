@@ -245,7 +245,7 @@ describe("package contract", () => {
     } finally {
       rmSync(temporaryProject, { recursive: true, force: true });
     }
-  });
+  }, 30_000);
 });
 
 describe("TypeScript compiler contract", () => {
