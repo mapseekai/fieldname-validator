@@ -36,6 +36,10 @@ validateFieldName("", "postgresql");
 // }
 ```
 
+`FieldNameValidationResult` 是以 `valid` 为判别字段的联合类型。检查
+`result.valid` 后，TypeScript 会自动收窄类型：`true` 表示 `errors` 必定是空元组，
+`false` 表示 `errors` 必定是非空错误元组。
+
 只需要布尔结果时可使用 `isValidFieldName`：
 
 ```ts
@@ -80,12 +84,18 @@ getFieldNameRules(format): FieldNameRules
 | `INVALID_START_CHARACTER` | 首字符不符合规则。 |
 | `INVALID_CHARACTER` | 后续字符中存在不允许的字符。 |
 | `RESERVED_KEYWORD` | 命中 Profile 的保留关键字。 |
+| `RESERVED_SYSTEM_COLUMN` | 命中 PostgreSQL 保留的系统列名。 |
+
+对于 `INVALID_START_CHARACTER` 和 `INVALID_CHARACTER`，`details.index`
+是从零开始的 UTF-16 code unit 偏移量，`details.indexUnit` 固定为
+`"utf16-code-units"`。该偏移量与 JavaScript 字符串索引一致，因此即使前面有 emoji
+等补充平面 Unicode scalar，`name.slice(details.index)` 仍会从报告的字符开始。
 
 ## 已支持的 Profile
 
 | 格式值（别名） | 校验规则与前提 | 长度限制 | 不包含的语法 |
 | --- | --- | --- | --- |
-| `postgresql`、`postgis` | 仅接受未加引号的 PostgreSQL 裸标识符：首字符为 Unicode 字母或 `_`；后续可额外使用 ASCII 数字和 `$`；未加引号标识符按小写折叠；拒绝 PostgreSQL 18 保留关键字。依据 [PostgreSQL Lexical Structure](https://www.postgresql.org/docs/18/sql-syntax-lexical.html) 与 [SQL Key Words](https://www.postgresql.org/docs/18/sql-keywords-appendix.html)。 | 默认 `NAMEDATALEN=64`、UTF-8 数据库编码下最多 63 个 UTF-8 字节。 | 加引号（delimited）标识符。 |
+| `postgresql`、`postgis` | 仅接受未加引号的 PostgreSQL 裸标识符：`_`、ASCII 字母或任意有效的非 ASCII Unicode scalar 可作首字符；后续可额外使用 ASCII 数字和 `$`；未加引号标识符按小写折叠；拒绝 PostgreSQL 18 保留关键字及系统列名（`tableoid`、`xmin`、`cmin`、`xmax`、`cmax`、`ctid`）。依据 [PostgreSQL Lexical Structure](https://www.postgresql.org/docs/18/sql-syntax-lexical.html)、[SQL Key Words](https://www.postgresql.org/docs/18/sql-keywords-appendix.html) 与 [System Columns](https://www.postgresql.org/docs/18/ddl-system-columns.html)。 | 默认 `NAMEDATALEN=64`、UTF-8 数据库编码下最多 63 个 UTF-8 字节。 | 加引号（delimited）标识符。 |
 | `shapefile`、`dbf` | ArcGIS 兼容的 Shapefile/DBF 交换子集：首字符为 ASCII 字母；后续仅可为 ASCII 字母、数字或 `_`。依据 [Esri 字段与表名称指导](https://support.esri.com/en-us/knowledge-base/what-characters-should-not-be-used-in-arcgis-for-field--000005588)。 | 最多 10 个 Unicode code point（字符）。 | 其他历史 DBF 方言。 |
 | `geopackage`、`sqlite` | 仅接受未加引号的 SQLite `ID` token：`_`、ASCII 字母或有效的非 ASCII Unicode scalar 可作首字符；后续可额外使用 ASCII 数字和 `$`；拒绝 SQLite 3.53.4 关键字。GeoPackage 推荐小写 snake_case，但该建议不会产生错误。依据 [SQLite Tokenizer Requirements](https://www.sqlite.org/draft/tokenreq.html)、[SQLite Keywords](https://www.sqlite.org/lang_keywords.html) 和 [OGC GeoPackage 1.4.0](https://www.geopackage.org/spec140/)。 | 不额外设置最大长度。 | 加引号（delimited）标识符。 |
 
@@ -101,3 +111,7 @@ getFieldNameRules(format): FieldNameRules
 ## 模块兼容性
 
 发布包同时提供 ESM 与 CommonJS 入口；TypeScript 声明会随导入方式选择相应的 `.d.ts` 或 `.d.cts` 文件。
+
+## 许可证状态
+
+在所有者选择许可证之前，包元数据有意标记为 `UNLICENSED`。目前没有任何开源许可证授予使用权利。

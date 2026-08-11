@@ -100,7 +100,7 @@ export const postgresqlProfile: InternalProfile = Object.freeze({
     }),
     subsequentCharacters(isAllowedSubsequentCharacter, {
       description:
-        "Characters after the first must be Unicode letters, ASCII digits, underscores, or dollar signs.",
+        "Characters after the first must be underscores, ASCII letters or digits, dollar signs, or valid non-ASCII Unicode scalars.",
       assumptions: [LOWERCASE_FOLDING_ASSUMPTION],
       sources: [POSTGRESQL_LEXICAL_SOURCE],
     }),

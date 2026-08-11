@@ -19,9 +19,8 @@ export default defineConfig(
     },
   },
   {
-    files: ["test/**/*.ts"],
+    files: ["test/type-contract.test.ts"],
     rules: {
-      "@typescript-eslint/no-unnecessary-type-assertion": "off",
       "@typescript-eslint/no-unused-expressions": "off",
     },
   },

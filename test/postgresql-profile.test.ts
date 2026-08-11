@@ -89,5 +89,11 @@ describe("PostgreSQL 18 bare identifiers", () => {
     expect(rules.rules.flatMap((rule) => rule.assumptions)).toContain(
       "Unquoted identifiers fold to lowercase.",
     );
+    expect(
+      rules.rules.find((rule) => rule.code === "INVALID_CHARACTER")
+        ?.description,
+    ).toBe(
+      "Characters after the first must be underscores, ASCII letters or digits, dollar signs, or valid non-ASCII Unicode scalars.",
+    );
   });
 });

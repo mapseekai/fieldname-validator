@@ -1,5 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync, rmSync } from "node:fs";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 
 describe("package contract", () => {
@@ -59,6 +61,77 @@ describe("package contract", () => {
     >;
 
     expect(packageJson.license).toBe("UNLICENSED");
+  });
+
+  it("accepts only empty package bundling declarations", () => {
+    const verifierUrl = pathToFileURL(
+      resolve("scripts/verify-package.mjs"),
+    ).href;
+    const source = `
+      const { assertNoDependencyChannels } = await import(${JSON.stringify(verifierUrl)});
+      const cases = [
+        ["undefined", {}, true],
+        ["false", { bundleDependencies: false }, true],
+        ["empty array", { bundleDependencies: [] }, true],
+        ["true", { bundleDependencies: true }, false],
+        ["object", { bundleDependencies: {} }, false],
+        ["string", { bundleDependencies: "dependency" }, false],
+        ["number", { bundleDependencies: 0 }, false],
+        ["null", { bundleDependencies: null }, false],
+      ];
+      const results = cases.map(([label, manifest, expected]) => {
+        try {
+          assertNoDependencyChannels(manifest, "test manifest");
+          return [label, true, expected];
+        } catch (error) {
+          return [label, false, expected, error.message];
+        }
+      });
+      console.log(JSON.stringify(results));
+    `;
+    const result = spawnSync(
+      process.execPath,
+      ["--input-type=module", "--eval", source],
+      { encoding: "utf8" },
+    );
+
+    if (result.error) throw result.error;
+    expect(result.status, result.stderr).toBe(0);
+    expect(JSON.parse(result.stdout)).toEqual([
+      ["undefined", true, true],
+      ["false", true, true],
+      ["empty array", true, true],
+      [
+        "true",
+        false,
+        false,
+        "test manifest must define bundleDependencies as an empty array or false",
+      ],
+      [
+        "object",
+        false,
+        false,
+        "test manifest must define bundleDependencies as an empty array or false",
+      ],
+      [
+        "string",
+        false,
+        false,
+        "test manifest must define bundleDependencies as an empty array or false",
+      ],
+      [
+        "number",
+        false,
+        false,
+        "test manifest must define bundleDependencies as an empty array or false",
+      ],
+      [
+        "null",
+        false,
+        false,
+        "test manifest must define bundleDependencies as an empty array or false",
+      ],
+    ]);
   });
 
   it("rebuilds a missing dist through the npm pack prepack lifecycle", () => {

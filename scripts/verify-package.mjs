@@ -6,16 +6,9 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const packageDirectory = fileURLToPath(new URL("..", import.meta.url));
-const packageJson = JSON.parse(
-  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
-);
-const temporaryDirectory = mkdtempSync(
-  join(tmpdir(), "fieldname-validator-package-"),
-);
 const expectedRuntimeExports = [
   "getFieldNameRules",
   "isValidFieldName",
@@ -28,111 +21,128 @@ const expectedArtifacts = [
   "dist/index.js",
 ];
 
-try {
-  assertNoDependencyChannels(packageJson, "source package.json");
+if (
+  process.argv[1] !== undefined &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+  verifyPackage();
+}
 
-  const packResult = run(
-    npmCommand(),
-    [
-      "pack",
-      "--json",
-      "--cache",
-      join(temporaryDirectory, "npm-cache"),
-      "--pack-destination",
-      temporaryDirectory,
-    ],
-    packageDirectory,
+function verifyPackage() {
+  const packageDirectory = fileURLToPath(new URL("..", import.meta.url));
+  const packageJson = JSON.parse(
+    readFileSync(new URL("../package.json", import.meta.url), "utf8"),
   );
-  const packReport = parsePackReport(packResult.stdout);
-  const packedFiles = new Set(packReport.files.map(({ path }) => path));
-
-  for (const artifact of expectedArtifacts) {
-    if (!packedFiles.has(artifact)) {
-      throw new Error(`Packed tarball is missing ${artifact}`);
-    }
-  }
-
-  writeFileSync(
-    join(temporaryDirectory, "package.json"),
-    JSON.stringify({ name: "fieldname-validator-consumer", private: true }),
+  const temporaryDirectory = mkdtempSync(
+    join(tmpdir(), "fieldname-validator-package-"),
   );
 
-  const tarballPath = join(temporaryDirectory, packReport.filename);
-  run(
-    npmCommand(),
-    [
-      "install",
-      "--ignore-scripts",
-      "--no-audit",
-      "--no-fund",
-      "--package-lock=false",
-      "--cache",
-      join(temporaryDirectory, "npm-cache"),
-      tarballPath,
-    ],
-    temporaryDirectory,
-  );
+  try {
+    assertNoDependencyChannels(packageJson, "source package.json");
 
-  const installedPackageJson = JSON.parse(
-    readFileSync(
-      join(
-        temporaryDirectory,
-        "node_modules",
-        packageJson.name,
-        "package.json",
-      ),
-      "utf8",
-    ),
-  );
-  assertNoDependencyChannels(installedPackageJson, "installed package.json");
-
-  writeFileSync(
-    join(temporaryDirectory, "consumer.mjs"),
-    runtimeConsumerSource(
-      `import * as packageNamespace from ${JSON.stringify(packageJson.name)};`,
-    ),
-  );
-  writeFileSync(
-    join(temporaryDirectory, "consumer.cjs"),
-    runtimeConsumerSource(
-      `const packageNamespace = require(${JSON.stringify(packageJson.name)});`,
-    ),
-  );
-
-  run(process.execPath, ["consumer.mjs"], temporaryDirectory);
-  run(process.execPath, ["consumer.cjs"], temporaryDirectory);
-
-  for (const extension of ["mts", "cts"]) {
-    const consumerPath = join(temporaryDirectory, `consumer.${extension}`);
-    writeFileSync(consumerPath, typeConsumerSource(packageJson.name));
-    run(
-      process.execPath,
+    const packResult = run(
+      npmCommand(),
       [
-        fileURLToPath(
-          new URL("../node_modules/typescript/bin/tsc", import.meta.url),
-        ),
-        "--noEmit",
-        "--strict",
-        "--module",
-        "Node16",
-        "--moduleResolution",
-        "Node16",
-        "--target",
-        "ES2020",
-        consumerPath,
+        "pack",
+        "--json",
+        "--cache",
+        join(temporaryDirectory, "npm-cache"),
+        "--pack-destination",
+        temporaryDirectory,
+      ],
+      packageDirectory,
+    );
+    const packReport = parsePackReport(packResult.stdout);
+    const packedFiles = new Set(packReport.files.map(({ path }) => path));
+
+    for (const artifact of expectedArtifacts) {
+      if (!packedFiles.has(artifact)) {
+        throw new Error(`Packed tarball is missing ${artifact}`);
+      }
+    }
+
+    writeFileSync(
+      join(temporaryDirectory, "package.json"),
+      JSON.stringify({ name: "fieldname-validator-consumer", private: true }),
+    );
+
+    const tarballPath = join(temporaryDirectory, packReport.filename);
+    run(
+      npmCommand(),
+      [
+        "install",
+        "--ignore-scripts",
+        "--no-audit",
+        "--no-fund",
+        "--package-lock=false",
+        "--cache",
+        join(temporaryDirectory, "npm-cache"),
+        tarballPath,
       ],
       temporaryDirectory,
     );
-  }
 
-  console.log(
-    `Verified ${packReport.filename}: ${expectedArtifacts.length} entry artifacts, exact ESM/CJS exports, zero dependency channels, and strict MTS/CTS consumers.`,
-  );
-} finally {
-  rmSync(temporaryDirectory, { recursive: true, force: true });
+    const installedPackageJson = JSON.parse(
+      readFileSync(
+        join(
+          temporaryDirectory,
+          "node_modules",
+          packageJson.name,
+          "package.json",
+        ),
+        "utf8",
+      ),
+    );
+    assertNoDependencyChannels(installedPackageJson, "installed package.json");
+
+    writeFileSync(
+      join(temporaryDirectory, "consumer.mjs"),
+      runtimeConsumerSource(
+        `import * as packageNamespace from ${JSON.stringify(packageJson.name)};`,
+      ),
+    );
+    writeFileSync(
+      join(temporaryDirectory, "consumer.cjs"),
+      runtimeConsumerSource(
+        `const packageNamespace = require(${JSON.stringify(packageJson.name)});`,
+      ),
+    );
+
+    run(process.execPath, ["consumer.mjs"], temporaryDirectory);
+    run(process.execPath, ["consumer.cjs"], temporaryDirectory);
+
+    for (const extension of ["mts", "cts"]) {
+      const consumerPath = join(temporaryDirectory, `consumer.${extension}`);
+      writeFileSync(consumerPath, typeConsumerSource(packageJson.name));
+      run(
+        process.execPath,
+        [
+          fileURLToPath(
+            new URL("../node_modules/typescript/bin/tsc", import.meta.url),
+          ),
+          "--noEmit",
+          "--strict",
+          "--module",
+          "Node16",
+          "--moduleResolution",
+          "Node16",
+          "--target",
+          "ES2020",
+          consumerPath,
+        ],
+        temporaryDirectory,
+      );
+    }
+
+    console.log(
+      `Verified ${packReport.filename}: ${expectedArtifacts.length} entry artifacts, exact ESM/CJS exports, zero dependency channels, and strict MTS/CTS consumers.`,
+    );
+  } finally {
+    rmSync(temporaryDirectory, { recursive: true, force: true });
+  }
 }
 
-function assertNoDependencyChannels(manifest, label) {
+export function assertNoDependencyChannels(manifest, label) {
   for (const channel of [
     "dependencies",
     "optionalDependencies",
@@ -144,8 +154,16 @@ function assertNoDependencyChannels(manifest, label) {
   }
 
   for (const channel of ["bundledDependencies", "bundleDependencies"]) {
-    const dependencies = manifest[channel] ?? [];
-    if (Object.keys(dependencies).length !== 0) {
+    const dependencies = manifest[channel];
+    if (dependencies === undefined || dependencies === false) {
+      continue;
+    }
+    if (!Array.isArray(dependencies)) {
+      throw new Error(
+        `${label} must define ${channel} as an empty array or false`,
+      );
+    }
+    if (dependencies.length !== 0) {
       throw new Error(`${label} must have zero ${channel}`);
     }
   }

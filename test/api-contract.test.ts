@@ -1,19 +1,19 @@
 import { getFieldNameRules, isValidFieldName, validateFieldName } from "../src/index.js";
+import type { FieldNameFormat } from "../src/index.js";
 import { describe, expect, it } from "vitest";
 
 describe("public API contract", () => {
-  it("keeps isValidFieldName consistent with validateFieldName", () => {
-    for (const [name, format] of [
-      ["parcel_id", "postgresql"],
-      ["select", "postgis"],
-      ["Name_123", "shapefile"],
-      ["SELECT", "sqlite"],
-    ] as const) {
-      expect(isValidFieldName(name, format)).toBe(
-        validateFieldName(name, format).valid,
-      );
-    }
-  });
+  it.each([
+    ["parcel_id", "postgresql", true],
+    ["select", "postgis", false],
+    ["Name_123", "shapefile", true],
+    ["SELECT", "sqlite", false],
+  ] as const)(
+    "returns %s validity for %s",
+    (name, format, expectedValidity) => {
+      expect(isValidFieldName(name, format)).toBe(expectedValidity);
+    },
+  );
 
   it("returns deterministic independent errors", () => {
     const name = `1${"a".repeat(63)}-`;
@@ -26,7 +26,7 @@ describe("public API contract", () => {
     ]);
   });
 
-  it("uses stable messages and structured issue details", () => {
+  it("returns exact public payloads for every issue code", () => {
     expect(validateFieldName("", "postgresql").errors[0]).toEqual({
       code: "EMPTY_NAME",
       message: "Field name must not be empty.",
@@ -34,45 +34,89 @@ describe("public API contract", () => {
     });
     expect(
       validateFieldName("a".repeat(64), "postgresql").errors[0],
-    ).toMatchObject({
+    ).toEqual({
       code: "MAX_LENGTH_EXCEEDED",
-      details: { actual: 64, max: 63, unit: "utf8-bytes" },
+      message: "Field name exceeds the maximum allowed length.",
+      details: { max: 63, actual: 64, unit: "utf8-bytes" },
+    });
+    expect(validateFieldName("1name", "postgresql").errors[0]).toEqual({
+      code: "INVALID_START_CHARACTER",
+      message: "Field name has an invalid starting character.",
+      details: { character: "1", index: 0, indexUnit: "utf16-code-units" },
+    });
+    expect(validateFieldName("a😀-", "postgresql").errors[0]).toEqual({
+      code: "INVALID_CHARACTER",
+      message: "Field name contains an invalid character.",
+      details: { character: "-", index: 3, indexUnit: "utf16-code-units" },
+    });
+    expect(validateFieldName("SELECT", "postgresql").errors[0]).toEqual({
+      code: "RESERVED_KEYWORD",
+      message: "Field name is a reserved keyword.",
+      details: { keyword: "select" },
+    });
+    expect(validateFieldName("XMIN", "postgresql").errors[0]).toEqual({
+      code: "RESERVED_SYSTEM_COLUMN",
+      message: "Field name is a reserved system column.",
+      details: { column: "xmin" },
     });
   });
 
-  it("returns defensive copies from getFieldNameRules", () => {
+  it.each([
+    ["postgresql", "postgis", "tableoid", false],
+    ["shapefile", "dbf", "abcdefghijk", false],
+    ["sqlite", "geopackage", "abcdefghijk", true],
+  ] as const)(
+    "keeps %s and %s rule DTOs and validation behavior equivalent",
+    (firstFormat, secondFormat, name, expectedValidity) => {
+      const firstRules = getFieldNameRules(firstFormat);
+      const secondRules = getFieldNameRules(secondFormat);
+      const firstResult = validateFieldName(name, firstFormat);
+      const secondResult = validateFieldName(name, secondFormat);
+
+      expect(firstRules.rules).toEqual(secondRules.rules);
+      expect(firstResult.valid).toBe(expectedValidity);
+      expect(secondResult.valid).toBe(expectedValidity);
+      expect(firstResult.errors).toEqual(secondResult.errors);
+    },
+  );
+
+  it("returns nested defensive copies from getFieldNameRules", () => {
     const first = getFieldNameRules("postgresql");
-    const mutableRules = first.rules as unknown as Array<{
-      description: string;
-    }>;
-    mutableRules[0]!.description = "mutated";
-    const firstLengthRule = first.rules.find(
-      (rule) => rule.code === "MAX_LENGTH_EXCEEDED",
-    )!;
-    (firstLengthRule.assumptions as unknown as string[])[0] =
-      "mutated assumption";
-    (
-      firstLengthRule.sources as unknown as Array<{ title: string }>
-    )[0]!.title = "mutated source";
-
     const second = getFieldNameRules("postgresql");
-    const secondLengthRule = second.rules.find(
-      (rule) => rule.code === "MAX_LENGTH_EXCEEDED",
-    )!;
-    expect(second.rules[0]!.description).not.toBe("mutated");
-    expect(secondLengthRule.assumptions[0]).not.toBe("mutated assumption");
-    expect(secondLengthRule.sources[0]!.title).not.toBe("mutated source");
+
+    expect(first).not.toBe(second);
+    expect(first.rules).not.toBe(second.rules);
+    expect(first.rules).toHaveLength(second.rules.length);
+
+    for (const [index, firstRule] of first.rules.entries()) {
+      const secondRule = second.rules[index];
+      expect(secondRule).toBeDefined();
+      expect(firstRule).not.toBe(secondRule);
+      expect(firstRule.assumptions).not.toBe(secondRule?.assumptions);
+      expect(firstRule.sources).not.toBe(secondRule?.sources);
+      expect(firstRule.sources).toHaveLength(secondRule?.sources.length ?? -1);
+
+      for (const [sourceIndex, firstSource] of firstRule.sources.entries()) {
+        expect(firstSource).not.toBe(secondRule?.sources[sourceIndex]);
+      }
+    }
   });
 
-  it("rejects formats removed from v1", () => {
-    expect(() => validateFieldName("name", "geojson" as never)).toThrow(
-      RangeError,
-    );
-    expect(() => validateFieldName("name", "geoparquet" as never)).toThrow(
-      RangeError,
-    );
-    expect(() => validateFieldName("name", "flatgeobuf" as never)).toThrow(
-      RangeError,
-    );
-  });
+  it.each(["geojson", "geoparquet", "flatgeobuf"])(
+    "rejects the removed %s format through every format-taking API",
+    (format) => {
+      const unsupportedFormat = format as FieldNameFormat;
+      const message = `Unsupported field name format: ${format}`;
+
+      expect(() => validateFieldName("name", unsupportedFormat)).toThrow(
+        new RangeError(message),
+      );
+      expect(() => isValidFieldName("name", unsupportedFormat)).toThrow(
+        new RangeError(message),
+      );
+      expect(() => getFieldNameRules(unsupportedFormat)).toThrow(
+        new RangeError(message),
+      );
+    },
+  );
 });

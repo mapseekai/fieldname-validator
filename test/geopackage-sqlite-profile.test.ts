@@ -49,4 +49,15 @@ describe("SQLite 3.53.4 bare identifiers", () => {
     expect(sources.some((source) => source.version === "SQLite 3.53.4")).toBe(true);
     expect(sources.some((source) => source.version === "OGC GeoPackage 1.4.0")).toBe(true);
   });
+
+  it.each(["sqlite", "geopackage"] as const)(
+    "exposes no maximum-length rule for %s",
+    (format) => {
+      expect(
+        getFieldNameRules(format).rules.some(
+          (rule) => rule.code === "MAX_LENGTH_EXCEEDED",
+        ),
+      ).toBe(false);
+    },
+  );
 });
