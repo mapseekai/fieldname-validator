@@ -7,7 +7,7 @@ import type {
 
 export type RuleMetadata = Omit<FieldNameRuleInfo, "code">;
 
-export interface InternalRule<C extends FieldNameIssueCode = FieldNameIssueCode> {
+export interface InternalRule<C extends FieldNameIssueCode> {
   readonly info: FieldNameRuleInfo<C>;
   evaluate(name: string): IssueForCode<C> | undefined;
 }
