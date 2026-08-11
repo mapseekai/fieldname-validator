@@ -4,10 +4,6 @@ import type { InternalRule, RuleMetadata } from "./types.js";
 type CharacterPredicate = (character: string) => boolean;
 
 export function utf8ByteLength(value: string): number {
-  return utf8ByteLengthUpTo(value);
-}
-
-function utf8ByteLengthUpTo(value: string, max?: number): number {
   let length = 0;
 
   for (const character of value) {
@@ -24,9 +20,6 @@ function utf8ByteLengthUpTo(value: string, max?: number): number {
       length += 4;
     }
 
-    if (max !== undefined && length > max) {
-      return length;
-    }
   }
 
   return length;
@@ -100,7 +93,7 @@ export function maxUtf8Bytes(
   return maxLength(
     max,
     "utf8-bytes",
-    (name) => utf8ByteLengthUpTo(name, max),
+    utf8ByteLength,
     metadata,
   );
 }
@@ -116,9 +109,6 @@ export function maxCodePoints(
       let count = 0;
       for (const _character of name) {
         count += 1;
-        if (count > max) {
-          return count;
-        }
       }
       return count;
     },

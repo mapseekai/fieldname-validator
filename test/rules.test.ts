@@ -14,7 +14,7 @@ describe("rule helpers", () => {
     expect(utf8ByteLength("\ud800")).toBe(3);
   });
 
-  it("stops UTF-8 byte counting after exceeding the configured maximum", () => {
+  it("reports the exact UTF-8 byte length after exceeding the configured maximum", () => {
     expect(
       maxUtf8Bytes(63, {
         description: "test",
@@ -23,7 +23,7 @@ describe("rule helpers", () => {
       }).evaluate("\ud800".repeat(1_000_000)),
     ).toMatchObject({
       code: "MAX_LENGTH_EXCEEDED",
-      details: { actual: 66, max: 63, unit: "utf8-bytes" },
+      details: { actual: 3_000_000, max: 63, unit: "utf8-bytes" },
     });
   });
 
@@ -32,7 +32,7 @@ describe("rule helpers", () => {
     expect(asciiLowercase("É")).toBe("É");
   });
 
-  it("counts code points with an early-exit payload", () => {
+  it("reports the exact code-point length after exceeding the configured maximum", () => {
     expect(
       maxCodePoints(10, {
         description: "test",
@@ -41,7 +41,7 @@ describe("rule helpers", () => {
       }).evaluate("a".repeat(1_000_000)),
     ).toMatchObject({
       code: "MAX_LENGTH_EXCEEDED",
-      details: { actual: 11, max: 10, unit: "code-points" },
+      details: { actual: 1_000_000, max: 10, unit: "code-points" },
     });
   });
 

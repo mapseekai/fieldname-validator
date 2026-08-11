@@ -29,7 +29,7 @@ describe("ArcGIS-compatible Shapefile/DBF names", () => {
     expect(validateFieldName("a".repeat(1_000_000), "shapefile").errors).toContainEqual(
       expect.objectContaining({
         code: "MAX_LENGTH_EXCEEDED",
-        details: { actual: 11, max: 10, unit: "code-points" },
+        details: { actual: 1_000_000, max: 10, unit: "code-points" },
       }),
     );
   });
