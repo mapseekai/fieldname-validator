@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-11
+
 ### Added
 
 - Add `RESERVED_SYSTEM_COLUMN` errors for PostgreSQL system column names, with the canonical lowercase column in `details.column`.
