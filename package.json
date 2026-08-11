@@ -1,6 +1,6 @@
 {
   "name": "fieldname-validator",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Validate one field name against selected database and geospatial format rules.",
   "license": "UNLICENSED",
   "type": "module",
