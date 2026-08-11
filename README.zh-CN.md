@@ -112,6 +112,13 @@ getFieldNameRules(format): FieldNameRules
 
 发布包同时提供 ESM 与 CommonJS 入口；TypeScript 声明会随导入方式选择相应的 `.d.ts` 或 `.d.cts` 文件。
 
+## TypeScript 开发检查
+
+源码类型检查保留 `skipLibCheck`，原因是上游 Vite / Rollup 声明在启用
+`exactOptionalPropertyTypes` 时目前存在冲突。该例外仅限仓库源码配置；包验证会对真实打包后的
+`.mts` 与 `.cts` 消费者使用 `--strict` 且不使用 `--skipLibCheck` 进行类型检查，因此两种模块格式
+发布的声明仍会受到严格检查。
+
 ## 许可证状态
 
 在所有者选择许可证之前，包元数据有意标记为 `UNLICENSED`。目前没有任何开源许可证授予使用权利。

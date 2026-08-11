@@ -17,7 +17,7 @@ export type FieldNameIssueCode =
 export interface EmptyNameIssue {
   readonly code: "EMPTY_NAME";
   readonly message: string;
-  readonly details: Readonly<Record<never, never>>;
+  readonly details: Readonly<Record<PropertyKey, never>>;
 }
 
 export interface MaxLengthExceededIssue {

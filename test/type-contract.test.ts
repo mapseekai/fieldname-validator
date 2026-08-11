@@ -22,8 +22,12 @@ describe("public TypeScript contract", () => {
     const issue = validateFieldName("", "postgresql").errors[0];
 
     if (issue?.code === "EMPTY_NAME") {
-      // @ts-expect-error EMPTY_NAME details have no arbitrary keys.
-      issue.details.nonexistent;
+      const emptyDetails: typeof issue.details = {};
+      void emptyDetails;
+
+      // @ts-expect-error EMPTY_NAME details reject extra properties.
+      const unexpectedDetails: typeof issue.details = { unexpected: 1 };
+      void unexpectedDetails;
     }
 
     const lengthIssue = validateFieldName("a".repeat(64), "postgresql").errors[0];
@@ -63,6 +67,7 @@ describe("public TypeScript contract", () => {
         // @ts-expect-error EMPTY_NAME rules must return EMPTY_NAME issues.
         code: "RESERVED_KEYWORD",
         message: "Field name is a reserved keyword.",
+        // @ts-expect-error EMPTY_NAME details reject keyword payloads.
         details: { keyword: "select" },
       }),
     };

@@ -85,6 +85,15 @@ Each `getFieldNameRules` call returns independent copies of the rule information
 - Supporting the removed v1 formats: GeoJSON, GeoParquet, or FlatGeobuf.
 - Treating this ArcGIS-compatible Shapefile/DBF subset as support for every historical DBF dialect.
 
+## TypeScript development checks
+
+Source type-checking keeps `skipLibCheck` enabled because the upstream Vite /
+Rollup declarations currently conflict when `exactOptionalPropertyTypes` is
+enabled. This exception is limited to the repository's source configuration:
+package verification type-checks real packed `.mts` and `.cts` consumers with
+`--strict` and without `--skipLibCheck`, so the published declarations remain
+strictly checked in both module formats.
+
 ## License status
 
 The package metadata is intentionally `UNLICENSED` until the owner selects a

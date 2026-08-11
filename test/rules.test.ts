@@ -2,10 +2,11 @@ import {
   asciiLowercase,
   maxCodePoints,
   maxUtf8Bytes,
+  reservedKeywords,
   reservedNames,
   utf8ByteLength,
 } from "../src/internal/rules.js";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 describe("rule helpers", () => {
   it("counts UTF-8 bytes rather than UTF-16 code units", () => {
@@ -57,5 +58,37 @@ describe("rule helpers", () => {
       message: "Field name is a reserved system column.",
       details: { column: "xmin" },
     });
+  });
+
+  it.each([
+    [
+      "reserved keywords",
+      () =>
+        reservedKeywords(new Set(["SELECT"]), {
+          description: "test",
+          assumptions: [],
+          sources: [],
+        }),
+    ],
+    [
+      "reserved system names",
+      () =>
+        reservedNames(new Set(["XMIN"]), {
+          description: "test",
+          assumptions: [],
+          sources: [],
+        }),
+    ],
+  ])("does not ASCII-fold a million-character candidate for %s", (_label, makeRule) => {
+    const rule = makeRule();
+    const candidate = "x".repeat(1_000_000);
+    const replaceSpy = vi.spyOn(String.prototype, "replace");
+
+    const result = rule.evaluate(candidate);
+    const replaceCallCount = replaceSpy.mock.calls.length;
+    replaceSpy.mockRestore();
+
+    expect(result).toBeUndefined();
+    expect(replaceCallCount).toBe(0);
   });
 });

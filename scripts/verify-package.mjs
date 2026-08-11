@@ -148,7 +148,21 @@ export function assertNoDependencyChannels(manifest, label) {
     "optionalDependencies",
     "peerDependencies",
   ]) {
-    if (Object.keys(manifest[channel] ?? {}).length !== 0) {
+    const dependencies = manifest[channel];
+    if (dependencies === undefined) {
+      continue;
+    }
+    if (
+      typeof dependencies !== "object" ||
+      dependencies === null ||
+      Array.isArray(dependencies) ||
+      Object.getPrototypeOf(dependencies) !== Object.prototype
+    ) {
+      throw new Error(
+        `${label} must define ${channel} as an empty plain object`,
+      );
+    }
+    if (Object.keys(dependencies).length !== 0) {
       throw new Error(`${label} must have zero ${channel}`);
     }
   }
@@ -250,6 +264,13 @@ const valid: boolean = isValidFieldName("field_name", format);
 const rules: FieldNameRules = getFieldNameRules(format);
 const code: FieldNameIssueCode = "EMPTY_NAME";
 const issue: FieldNameIssue = validateFieldName("", format).errors[0]!;
+type EmptyNameDetails = Extract<
+  FieldNameIssue,
+  { readonly code: "EMPTY_NAME" }
+>["details"];
+const emptyNameDetails: EmptyNameDetails = {};
+// @ts-expect-error EMPTY_NAME details must reject extra properties.
+const unexpectedEmptyNameDetails: EmptyNameDetails = { unexpected: 1 };
 const rule: FieldNameRuleInfo = rules.rules[0]!;
 const source: RuleSource = rule.sources[0] ?? {
   title: "Consumer fallback",
@@ -257,6 +278,16 @@ const source: RuleSource = rule.sources[0] ?? {
   version: "1",
 };
 
-void [validation, valid, rules, code, issue, rule, source];
+void [
+  validation,
+  valid,
+  rules,
+  code,
+  issue,
+  emptyNameDetails,
+  unexpectedEmptyNameDetails,
+  rule,
+  source,
+];
 `;
 }

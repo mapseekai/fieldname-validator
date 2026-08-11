@@ -35,6 +35,16 @@ function asciiUppercase(value: string): string {
   );
 }
 
+function maximumKeyLength(keys: ReadonlySet<string>): number {
+  let maximum = 0;
+  for (const key of keys) {
+    if (key.length > maximum) {
+      maximum = key.length;
+    }
+  }
+  return maximum;
+}
+
 function ruleInfo<C extends FieldNameIssueCode>(
   code: C,
   metadata: RuleMetadata,
@@ -182,11 +192,16 @@ export function reservedKeywords(
   metadata: RuleMetadata,
 ): InternalRule<"RESERVED_KEYWORD"> {
   const canonicalKeywords = new Set(Array.from(keywords, asciiUppercase));
+  const maximumCanonicalKeywordLength = maximumKeyLength(canonicalKeywords);
 
   return {
     info: ruleInfo("RESERVED_KEYWORD", metadata),
     evaluate(name) {
       if (name === "") {
+        return undefined;
+      }
+
+      if (name.length > maximumCanonicalKeywordLength) {
         return undefined;
       }
 
@@ -208,11 +223,16 @@ export function reservedNames(
   metadata: RuleMetadata,
 ): InternalRule<"RESERVED_SYSTEM_COLUMN"> {
   const canonicalNames = new Set(Array.from(names, asciiUppercase));
+  const maximumCanonicalNameLength = maximumKeyLength(canonicalNames);
 
   return {
     info: ruleInfo("RESERVED_SYSTEM_COLUMN", metadata),
     evaluate(name) {
       if (name === "") {
+        return undefined;
+      }
+
+      if (name.length > maximumCanonicalNameLength) {
         return undefined;
       }
 
