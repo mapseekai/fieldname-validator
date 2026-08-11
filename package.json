@@ -2,6 +2,7 @@
   "name": "fieldname-validator",
   "version": "0.2.0",
   "description": "Validate one field name against selected database and geospatial format rules.",
+  "license": "UNLICENSED",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -26,24 +27,33 @@
   ],
   "sideEffects": false,
   "engines": {
-    "node": ">=18"
+    "node": "^18.18.0 || ^20.9.0 || >=22.0.0"
   },
   "scripts": {
     "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "lint": "eslint src test",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "test:package": "npm run build && node scripts/verify-package.mjs",
-    "check": "npm run typecheck && npm test && npm run test:package"
+    "prepack": "npm run build",
+    "test:package": "node scripts/verify-package.mjs",
+    "check": "npm run lint && npm run typecheck && npm test && npm run test:package"
   },
   "dependencies": {},
   "overrides": {
-    "vite": "6.2.7"
+    "vite": "6.4.3",
+    "tsup": {
+      "esbuild": "0.28.1"
+    }
   },
   "devDependencies": {
+    "@eslint/js": "9.39.3",
     "@types/node": "^18.0.0",
+    "esbuild": "0.28.1",
+    "eslint": "9.39.3",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
+    "typescript-eslint": "8.67.0",
     "vitest": "^3.0.0"
   }
 }
