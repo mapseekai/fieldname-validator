@@ -1,8 +1,4 @@
-import type {
-  FieldNameIssue,
-  FieldNameIssueCode,
-  FieldNameRuleInfo,
-} from "../types.js";
+import type { FieldNameIssueCode, FieldNameRuleInfo } from "../types.js";
 import type { InternalRule, RuleMetadata } from "./types.js";
 
 type CharacterPredicate = (character: string) => boolean;
@@ -46,7 +42,10 @@ function asciiUppercase(value: string): string {
   );
 }
 
-function ruleInfo(code: FieldNameIssueCode, metadata: RuleMetadata): FieldNameRuleInfo {
+function ruleInfo<C extends FieldNameIssueCode>(
+  code: C,
+  metadata: RuleMetadata,
+): FieldNameRuleInfo<C> {
   return { code, ...metadata };
 }
 
@@ -55,7 +54,7 @@ function maxLength(
   unit: "utf8-bytes" | "code-points",
   measure: (name: string) => number,
   metadata: RuleMetadata,
-): InternalRule {
+): InternalRule<"MAX_LENGTH_EXCEEDED"> {
   return {
     info: ruleInfo("MAX_LENGTH_EXCEEDED", metadata),
     evaluate(name) {
@@ -77,7 +76,7 @@ function maxLength(
   };
 }
 
-export function nonEmpty(metadata: RuleMetadata): InternalRule {
+export function nonEmpty(metadata: RuleMetadata): InternalRule<"EMPTY_NAME"> {
   return {
     info: ruleInfo("EMPTY_NAME", metadata),
     evaluate(name) {
@@ -94,7 +93,10 @@ export function nonEmpty(metadata: RuleMetadata): InternalRule {
   };
 }
 
-export function maxUtf8Bytes(max: number, metadata: RuleMetadata): InternalRule {
+export function maxUtf8Bytes(
+  max: number,
+  metadata: RuleMetadata,
+): InternalRule<"MAX_LENGTH_EXCEEDED"> {
   return maxLength(
     max,
     "utf8-bytes",
@@ -103,7 +105,10 @@ export function maxUtf8Bytes(max: number, metadata: RuleMetadata): InternalRule 
   );
 }
 
-export function maxCodePoints(max: number, metadata: RuleMetadata): InternalRule {
+export function maxCodePoints(
+  max: number,
+  metadata: RuleMetadata,
+): InternalRule<"MAX_LENGTH_EXCEEDED"> {
   return maxLength(
     max,
     "code-points",
@@ -124,7 +129,7 @@ export function maxCodePoints(max: number, metadata: RuleMetadata): InternalRule
 export function initialCharacter(
   isAllowed: CharacterPredicate,
   metadata: RuleMetadata,
-): InternalRule {
+): InternalRule<"INVALID_START_CHARACTER"> {
   return {
     info: ruleInfo("INVALID_START_CHARACTER", metadata),
     evaluate(name) {
@@ -149,7 +154,7 @@ export function initialCharacter(
 export function subsequentCharacters(
   isAllowed: CharacterPredicate,
   metadata: RuleMetadata,
-): InternalRule {
+): InternalRule<"INVALID_CHARACTER"> {
   return {
     info: ruleInfo("INVALID_CHARACTER", metadata),
     evaluate(name) {
@@ -185,7 +190,7 @@ export function subsequentCharacters(
 export function reservedKeywords(
   keywords: ReadonlySet<string>,
   metadata: RuleMetadata,
-): InternalRule {
+): InternalRule<"RESERVED_KEYWORD"> {
   const canonicalKeywords = new Set(Array.from(keywords, asciiUppercase));
 
   return {
@@ -211,7 +216,7 @@ export function reservedKeywords(
 export function reservedNames(
   names: ReadonlySet<string>,
   metadata: RuleMetadata,
-): InternalRule {
+): InternalRule<"RESERVED_SYSTEM_COLUMN"> {
   const canonicalNames = new Set(Array.from(names, asciiUppercase));
 
   return {

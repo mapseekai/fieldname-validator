@@ -1,14 +1,23 @@
-import type { FieldNameIssue, FieldNameRuleInfo, FieldNameFormat } from "../types.js";
+import type {
+  FieldNameFormat,
+  FieldNameIssueCode,
+  FieldNameRuleInfo,
+  IssueForCode,
+} from "../types.js";
 
 export type RuleMetadata = Omit<FieldNameRuleInfo, "code">;
 
-export interface InternalRule {
-  readonly info: FieldNameRuleInfo;
-  evaluate(name: string): FieldNameIssue | undefined;
+export interface InternalRule<C extends FieldNameIssueCode = FieldNameIssueCode> {
+  readonly info: FieldNameRuleInfo<C>;
+  evaluate(name: string): IssueForCode<C> | undefined;
 }
+
+export type InternalRuleForAnyCode = {
+  [C in FieldNameIssueCode]: InternalRule<C>;
+}[FieldNameIssueCode];
 
 export interface InternalProfile {
   readonly id: "postgresql" | "shapefile-dbf" | "geopackage-sqlite";
   readonly aliases: readonly FieldNameFormat[];
-  readonly rules: readonly InternalRule[];
+  readonly rules: readonly InternalRuleForAnyCode[];
 }

@@ -6,10 +6,14 @@ import type {
   FieldNameValidationResult,
 } from "./types.js";
 
-export function validateFieldName(
+export function validateFieldName<F extends FieldNameFormat>(
   name: string,
-  format: FieldNameFormat,
-): FieldNameValidationResult {
+  format: F,
+): FieldNameValidationResult<F>;
+export function validateFieldName<F extends FieldNameFormat>(
+  name: string,
+  format: F,
+): FieldNameValidationResult<F> {
   if (typeof name !== "string") {
     throw new TypeError("Field name must be a string.");
   }
@@ -19,10 +23,15 @@ export function validateFieldName(
     .map((rule) => rule.evaluate(name))
     .filter((issue): issue is FieldNameIssue => issue !== undefined);
 
+  const [firstError, ...remainingErrors] = errors;
+  if (firstError === undefined) {
+    return { valid: true, format, errors: [] };
+  }
+
   return {
-    valid: errors.length === 0,
+    valid: false,
     format,
-    errors,
+    errors: [firstError, ...remainingErrors],
   };
 }
 
@@ -30,7 +39,9 @@ export function isValidFieldName(name: string, format: FieldNameFormat): boolean
   return validateFieldName(name, format).valid;
 }
 
-export function getFieldNameRules(format: FieldNameFormat): FieldNameRules {
+export function getFieldNameRules<F extends FieldNameFormat>(
+  format: F,
+): FieldNameRules<F> {
   const profile = resolveProfile(format);
 
   return {
