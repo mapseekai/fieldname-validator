@@ -6,6 +6,7 @@ describe("SQLite 3.53.4 bare identifiers", () => {
     ["_local", true, []],
     ["école", true, []],
     ["ſelect", true, []],
+    ["😀name", true, []],
     ["dollar$inside", true, []],
     ["a".repeat(256), true, []],
     ["", false, ["EMPTY_NAME"]],

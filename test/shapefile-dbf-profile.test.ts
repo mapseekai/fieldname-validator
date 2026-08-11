@@ -24,4 +24,13 @@ describe("ArcGIS-compatible Shapefile/DBF names", () => {
         .some((source) => source.url.includes("support.esri.com")),
     ).toBe(true);
   });
+
+  it("rejects a long name at the code-point limit", () => {
+    expect(validateFieldName("a".repeat(1_000_000), "shapefile").errors).toContainEqual(
+      expect.objectContaining({
+        code: "MAX_LENGTH_EXCEEDED",
+        details: { actual: 11, max: 10, unit: "code-points" },
+      }),
+    );
+  });
 });

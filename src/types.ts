@@ -11,7 +11,8 @@ export type FieldNameIssueCode =
   | "MAX_LENGTH_EXCEEDED"
   | "INVALID_START_CHARACTER"
   | "INVALID_CHARACTER"
-  | "RESERVED_KEYWORD";
+  | "RESERVED_KEYWORD"
+  | "RESERVED_SYSTEM_COLUMN";
 
 export interface RuleSource {
   readonly title: string;

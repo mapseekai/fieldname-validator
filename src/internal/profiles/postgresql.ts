@@ -4,6 +4,7 @@ import {
   maxUtf8Bytes,
   nonEmpty,
   reservedKeywords,
+  reservedNames,
   subsequentCharacters,
 } from "../rules.js";
 import type { InternalProfile } from "../types.js";
@@ -20,11 +21,50 @@ const POSTGRESQL_KEYWORDS_SOURCE = {
   version: "PostgreSQL 18",
 } as const;
 
+const POSTGRESQL_SYSTEM_COLUMNS_SOURCE = {
+  title: "PostgreSQL 18: System Columns",
+  url: "https://www.postgresql.org/docs/18/ddl-system-columns.html",
+  version: "PostgreSQL 18",
+} as const;
+
 const LOWERCASE_FOLDING_ASSUMPTION = "Unquoted identifiers fold to lowercase.";
-const unicodeLetter = /^\p{L}$/u;
+const POSTGRESQL_SYSTEM_COLUMNS = new Set([
+  "tableoid",
+  "xmin",
+  "cmin",
+  "xmax",
+  "cmax",
+  "ctid",
+]);
+
+function isUnpairedSurrogate(character: string): boolean {
+  if (character.length !== 1) {
+    return false;
+  }
+
+  const codeUnit = character.charCodeAt(0);
+  return codeUnit >= 0xd800 && codeUnit <= 0xdfff;
+}
+
+function isAsciiLetter(character: string): boolean {
+  return /^[A-Za-z]$/.test(character);
+}
+
+function isValidNonAsciiUnicodeScalar(character: string): boolean {
+  if (isUnpairedSurrogate(character)) {
+    return false;
+  }
+
+  const codePoint = character.codePointAt(0);
+  return codePoint !== undefined && codePoint > 0x7f;
+}
 
 function isAllowedInitialCharacter(character: string): boolean {
-  return character === "_" || unicodeLetter.test(character);
+  return (
+    character === "_" ||
+    isAsciiLetter(character) ||
+    isValidNonAsciiUnicodeScalar(character)
+  );
 }
 
 function isAllowedSubsequentCharacter(character: string): boolean {
@@ -53,7 +93,8 @@ export const postgresqlProfile: InternalProfile = Object.freeze({
       sources: [POSTGRESQL_LEXICAL_SOURCE],
     }),
     initialCharacter(isAllowedInitialCharacter, {
-      description: "Must begin with a Unicode letter or underscore.",
+      description:
+        "Must begin with an underscore, ASCII letter, or valid non-ASCII Unicode scalar.",
       assumptions: [LOWERCASE_FOLDING_ASSUMPTION],
       sources: [POSTGRESQL_LEXICAL_SOURCE],
     }),
@@ -67,6 +108,11 @@ export const postgresqlProfile: InternalProfile = Object.freeze({
       description: "Must not be a PostgreSQL 18 reserved key word.",
       assumptions: [LOWERCASE_FOLDING_ASSUMPTION],
       sources: [POSTGRESQL_LEXICAL_SOURCE, POSTGRESQL_KEYWORDS_SOURCE],
+    }),
+    reservedNames(POSTGRESQL_SYSTEM_COLUMNS, {
+      description: "Must not conflict with a PostgreSQL system column name.",
+      assumptions: [LOWERCASE_FOLDING_ASSUMPTION],
+      sources: [POSTGRESQL_SYSTEM_COLUMNS_SOURCE],
     }),
   ]),
 });

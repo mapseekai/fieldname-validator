@@ -1,5 +1,7 @@
 import type { FieldNameIssue, FieldNameRuleInfo, FieldNameFormat } from "../types.js";
 
+export type RuleMetadata = Omit<FieldNameRuleInfo, "code">;
+
 export interface InternalRule {
   readonly info: FieldNameRuleInfo;
   evaluate(name: string): FieldNameIssue | undefined;

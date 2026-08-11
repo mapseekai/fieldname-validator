@@ -37,6 +37,48 @@ describe("PostgreSQL 18 bare identifiers", () => {
     });
   });
 
+  it.each(["tableoid", "xmin", "cmin", "xmax", "cmax", "ctid", "XMIN"])(
+    "rejects PostgreSQL system column %s",
+    (name) =>
+      expect(validateFieldName(name, "postgresql").errors[0]).toMatchObject({
+        code: "RESERVED_SYSTEM_COLUMN",
+      }),
+  );
+
+  it.each(["e\u0301", "😀name", "𐐷name"])(
+    "accepts PostgreSQL lexer non-ASCII scalar %j",
+    (name) => {
+      expect(validateFieldName(name, "postgresql").valid).toBe(true);
+    },
+  );
+
+  it("accepts a PostgreSQL identifier of exactly 63 UTF-8 bytes", () => {
+    expect(validateFieldName(`${"a".repeat(61)}é`, "postgresql").valid).toBe(true);
+  });
+
+  it.each(["\ud800", "name\udfff"])(
+    "rejects an unpaired surrogate in %j",
+    (name) => {
+      expect(validateFieldName(name, "postgresql").valid).toBe(false);
+    },
+  );
+
+  it("reports invalid characters using UTF-16 code-unit indices", () => {
+    expect(validateFieldName("a😀-", "postgresql").errors).toContainEqual(
+      expect.objectContaining({
+        code: "INVALID_CHARACTER",
+        details: { character: "-", index: 3, indexUnit: "utf16-code-units" },
+      }),
+    );
+  });
+
+  it("keeps PostGIS validation errors equivalent to PostgreSQL", () => {
+    const name = "a😀-";
+    expect(validateFieldName(name, "postgis").errors).toEqual(
+      validateFieldName(name, "postgresql").errors,
+    );
+  });
+
   it("publishes PostgreSQL 18 source metadata and lowercase-folding assumptions", () => {
     const rules = getFieldNameRules("postgresql");
     expect(

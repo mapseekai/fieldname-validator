@@ -3,15 +3,37 @@ import type {
   FieldNameIssueCode,
   FieldNameRuleInfo,
 } from "../types.js";
-import type { InternalRule } from "./types.js";
+import type { InternalRule, RuleMetadata } from "./types.js";
 
-type RuleMetadata = Omit<FieldNameRuleInfo, "code">;
 type CharacterPredicate = (character: string) => boolean;
 
-const textEncoder = new TextEncoder();
-
 export function utf8ByteLength(value: string): number {
-  return textEncoder.encode(value).byteLength;
+  return utf8ByteLengthUpTo(value);
+}
+
+function utf8ByteLengthUpTo(value: string, max?: number): number {
+  let length = 0;
+
+  for (const character of value) {
+    const codePoint = character.codePointAt(0)!;
+    if (codePoint >= 0xd800 && codePoint <= 0xdfff) {
+      length += 3;
+    } else if (codePoint <= 0x7f) {
+      length += 1;
+    } else if (codePoint <= 0x7ff) {
+      length += 2;
+    } else if (codePoint <= 0xffff) {
+      length += 3;
+    } else {
+      length += 4;
+    }
+
+    if (max !== undefined && length > max) {
+      return length;
+    }
+  }
+
+  return length;
 }
 
 export function asciiLowercase(value: string): string {
@@ -73,11 +95,30 @@ export function nonEmpty(metadata: RuleMetadata): InternalRule {
 }
 
 export function maxUtf8Bytes(max: number, metadata: RuleMetadata): InternalRule {
-  return maxLength(max, "utf8-bytes", utf8ByteLength, metadata);
+  return maxLength(
+    max,
+    "utf8-bytes",
+    (name) => utf8ByteLengthUpTo(name, max),
+    metadata,
+  );
 }
 
 export function maxCodePoints(max: number, metadata: RuleMetadata): InternalRule {
-  return maxLength(max, "code-points", (name) => Array.from(name).length, metadata);
+  return maxLength(
+    max,
+    "code-points",
+    (name) => {
+      let count = 0;
+      for (const _character of name) {
+        count += 1;
+        if (count > max) {
+          return count;
+        }
+      }
+      return count;
+    },
+    metadata,
+  );
 }
 
 export function initialCharacter(
@@ -91,7 +132,7 @@ export function initialCharacter(
         return undefined;
       }
 
-      const character = Array.from(name)[0]!;
+      const character = name[Symbol.iterator]().next().value!;
       if (isAllowed(character)) {
         return undefined;
       }
@@ -99,7 +140,7 @@ export function initialCharacter(
       return {
         code: "INVALID_START_CHARACTER",
         message: "Field name has an invalid starting character.",
-        details: { character, index: 0 },
+        details: { character, index: 0, indexUnit: "utf16-code-units" },
       };
     },
   };
@@ -116,16 +157,24 @@ export function subsequentCharacters(
         return undefined;
       }
 
-      const characters = Array.from(name);
-      for (let index = 1; index < characters.length; index += 1) {
-        const character = characters[index]!;
+      let index = 0;
+      let isFirstCharacter = true;
+      for (const character of name) {
+        if (isFirstCharacter) {
+          isFirstCharacter = false;
+          index += character.length;
+          continue;
+        }
+
         if (!isAllowed(character)) {
           return {
             code: "INVALID_CHARACTER",
             message: "Field name contains an invalid character.",
-            details: { character, index },
+            details: { character, index, indexUnit: "utf16-code-units" },
           };
         }
+
+        index += character.length;
       }
 
       return undefined;
@@ -154,6 +203,32 @@ export function reservedKeywords(
         code: "RESERVED_KEYWORD",
         message: "Field name is a reserved keyword.",
         details: { keyword: asciiLowercase(name) },
+      };
+    },
+  };
+}
+
+export function reservedNames(
+  names: ReadonlySet<string>,
+  metadata: RuleMetadata,
+): InternalRule {
+  const canonicalNames = new Set(Array.from(names, asciiUppercase));
+
+  return {
+    info: ruleInfo("RESERVED_SYSTEM_COLUMN", metadata),
+    evaluate(name) {
+      if (name === "") {
+        return undefined;
+      }
+
+      if (!canonicalNames.has(asciiUppercase(name))) {
+        return undefined;
+      }
+
+      return {
+        code: "RESERVED_SYSTEM_COLUMN",
+        message: "Field name is a reserved system column.",
+        details: { column: asciiLowercase(name) },
       };
     },
   };
